@@ -1,0 +1,67 @@
+- name: install cri
+  hosts: masters,workers
+  become: yes
+  tasks:
+    - name: Install prerequisite packages
+      ansible.builtin.apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+        update_cache: yes
+
+    - name: Ensure keyrings directory exists
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Download Docker GPG key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+
+    - name: Add Docker repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu  {{ ansible_distribution_release }}  stable"
+        filename: docker
+        state: present
+        update_cache: yes
+    - name: install containerd
+      ansible.builtin.apt:
+        name: containerd.io
+        state: present
+    - name: Create a directory if it does not exist
+      ansible.builtin.file:
+        path: /etc/containerd
+        state: directory
+        mode: "0755"
+        owner: root
+        group: root
+    - name: take default config containerd
+      ansible.builtin.command: containerd config default
+      register: containerd_default
+      changed_when: false
+
+    - name: config containerd (SystemdCgroup=true)
+      ansible.builtin.copy:
+        content: "{{ containerd_default.stdout | regex_replace('SystemdCgroup = false', 'SystemdCgroup = true') }}\n"
+        dest: /etc/containerd/config.toml
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Restart containerd
+    - name: Enable service
+      ansible.builtin.systemd_service:
+        name: containerd
+        enabled: true
+        masked: no
+  handlers:
+    - name: Restart containerd
+      ansible.builtin.systemd_service:
+        name: containerd
+        state: restarted

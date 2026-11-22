@@ -1,0 +1,13 @@
+- name: disable swap permanent
+  hosts: masters,workers
+  become: yes
+  tasks:
+    - name: comment out entri swap di fstab
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^([^#\n].*\sswap\s.*)$'
+        replace: '# \1'
+        backup: yes
+    - name: disable swap sekarang
+      ansible.builtin.command: swapoff -a
+      when: ansible_swaptotal_mb > 0

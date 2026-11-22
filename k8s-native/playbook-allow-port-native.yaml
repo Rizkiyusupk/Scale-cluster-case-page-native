@@ -1,0 +1,74 @@
+- name: activate ufw
+  hosts: masters,workers
+  become: yes
+
+  tasks:
+    - name: allow port for ssh
+      community.general.ufw:
+        port: 22
+        rule: allow
+        proto: tcp
+    - name: allow port for CNI plugin (use case flannel)
+      community.general.ufw:
+        port: 8472
+        rule: allow
+        proto: udp
+
+- name: allow port
+  hosts: workers
+  become: yes
+
+  tasks:
+    - name: allow port
+      community.general.ufw:
+        port: 30000:32767
+        rule: allow
+        proto: tcp
+    - name: allow port 2
+      community.general.ufw:
+        port: 10250
+        rule: allow
+        proto: tcp
+
+- name: allow port2
+  hosts: masters
+  become: yes
+
+  tasks:
+    - name: allow port2
+      community.general.ufw:
+        port: 10257:10259
+        rule: allow
+        proto: tcp
+    - name: allow-port2
+      community.general.ufw:
+        port: 6443
+        rule: allow
+        proto: tcp
+    - name: allowport2
+      community.general.ufw:
+        port: 2379:2380
+        rule: allow
+        proto: tcp
+- name: daemon-reload
+  hosts: masters,workers
+  become: yes
+
+  tasks:
+    - name: daemon-reload
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+
+- name: enable ufw
+  hosts: masters,workers
+  become: true
+
+  tasks:
+    - name: set default forward policy ke allow
+      community.general.ufw:
+        default: allow
+        direction: routed
+
+    - name: Ensure UFW is activated and enabled
+      community.general.ufw:
+        state: enabled

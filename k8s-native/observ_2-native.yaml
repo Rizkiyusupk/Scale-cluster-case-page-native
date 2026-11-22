@@ -1,0 +1,57 @@
+- name: install loki
+  hosts: masters
+  become: yes
+  tasks:
+    - name: Add a repository
+      kubernetes.core.helm_repository:
+        name: grafana
+        repo_url: https://grafana.github.io/helm-charts
+    ###  saya meminta claude untuk memasukan semua nilai --set dari playbook lama di satu task ini karena memang beanr benar membingungkan
+    - name: Deploy Loki (single binary)
+      kubernetes.core.helm:
+        name: loki
+        chart_ref: grafana/loki
+        chart_version: "7.3.0 "
+        release_namespace: monitoring
+        create_namespace: true
+        update_repo_cache: true
+        kubeconfig: /home/ubuntu/.kube/config
+        values:
+          deploymentMode: SingleBinary
+          loki:
+            commonConfig:
+              replication_factor: 1
+            storage:
+              type: filesystem
+            schemaConfig:
+              configs:
+                - from: "2024-04-01"
+                  store: tsdb
+                  object_store: filesystem
+                  schema: v13
+                  index:
+                    prefix: loki_index_
+                    period: 24h
+          singleBinary:
+            replicas: 1
+            persistence:
+              enabled: true
+              size: 5Gi
+          read:
+            replicas: 0
+          write:
+            replicas: 0
+          backend:
+            replicas: 0
+    - name: Deploy latest version of Grafana/promtail chart inside monitoring namespace with values
+      kubernetes.core.helm:
+        name: promtail
+        chart_ref: grafana/promtail
+        chart_version: "6.17.1"
+        release_namespace: monitoring
+        update_repo_cache: true
+        kubeconfig: /home/ubuntu/.kube/config
+        values:
+          config:
+            clients:
+              - url: http://loki:3100/loki/api/v1/push

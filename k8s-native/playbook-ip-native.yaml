@@ -1,0 +1,13 @@
+- name: adding diffrent ip for node
+  hosts: masters,workers
+  become: yes
+
+  tasks:
+    - name: add ip
+      ansible.builtin.blockinfile:
+        path: /etc/hosts
+        block: |
+          ip-node1 master
+          ip-node2 worker1
+          ip-node3 worker2
+        create: yes

@@ -1,0 +1,29 @@
+- name: install observ tools
+  hosts: masters
+  become: yes
+
+  tasks:
+    - name: install helm
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+        dest: /home/ubuntu/helm.sh
+        mode: "0700"
+
+    - name: execute sh file
+      ansible.builtin.shell: /home/ubuntu/helm.sh
+      args:
+        creates: /usr/local/bin/helm
+      environment:
+        DESIRED_VERSION: "v3.21.0"
+    - name: Add a repository
+      kubernetes.core.helm_repository:
+        name: prometheus-community
+        repo_url: https://prometheus-community.github.io/helm-charts
+    - name: Deploy latest version of Grafana chart inside monitoring namespace with values
+      kubernetes.core.helm:
+        name: prometheus
+        chart_ref: prometheus-community/kube-prometheus-stack
+        chart_version: "88.6.2"
+        release_namespace: monitoring
+        update_repo_cache: true
+        kubeconfig: /home/ubuntu/.kube/config

@@ -1,0 +1,24 @@
+- name: do a configuration
+  hosts: masters,workers
+  become: yes
+
+  tasks:
+    - name: set a module for modprobe
+      community.general.modprobe:
+        name: "{{ item }}"
+        state: present
+        persistent: present
+      loop:
+        - overlay
+        - br_netfilter
+    - name: set sysctl for kubernetes
+      ansible.posix.sysctl:
+        name: "{{ item }}"
+        value: "1"
+        sysctl_file: /etc/sysctl.d/k8s.conf
+        sysctl_set: true
+        reload: true
+      loop:
+        - net.bridge.bridge-nf-call-iptables
+        - net.ipv4.ip_forward
+        - net.bridge.bridge-nf-call-ip6tables
