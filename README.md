@@ -30,10 +30,12 @@ terraform-setup/
 ├── sqs-trigger-lambda.tf
 ├── iam-attachment-role.tf
 ├── iam-attachment-role-consumer.tf
+├── lambda_function_alert.py
 ├── lambda_function_consumer.py
 ├── lambda_function.py
 ├── lambda-permission.tf
 ├── lambda.tf
+├── lambda-alert.tf
 ├── lambda-2.tf
 ├── cloud-watch.tf
 ├── cloud-watch-metrics.tf
